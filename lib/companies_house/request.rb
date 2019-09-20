@@ -33,6 +33,8 @@ module CompaniesHouse
     attribute :transaction_id, String, required: true
     attribute :instrumentation
 
+    attribute :headers, Hash
+
     def initialize(args)
       super(args)
 
@@ -51,6 +53,10 @@ module CompaniesHouse
 
       req = Net::HTTP::Get.new(@uri)
       req.basic_auth @api_key, ""
+
+      headers.each do |key, value|
+        req[key] = value
+      end
 
       response = connection.request req
       @notification_payload[:status] = response.code
@@ -83,6 +89,8 @@ module CompaniesHouse
       case response.code
       when "200"
         JSON[response.body]
+      when "302"
+        { 'location': response['location'] }
       when "401"
         raise CompaniesHouse::AuthenticationError, response
       when "404"
